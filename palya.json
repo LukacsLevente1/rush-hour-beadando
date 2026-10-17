@@ -1,0 +1,14 @@
+{
+  "rows": 6,
+  "cols": 6,
+  "vehicles": [
+    {"id":"H", "row":2, "col":1, "length":2, "orientation":"horizontal", "humanTarget":true, "aiTarget":false},
+    {"id":"B", "row":4, "col":1, "length":2, "orientation":"horizontal", "humanTarget":false, "aiTarget":true},
+    {"id":"A", "row":0, "col":0, "length":2, "orientation":"vertical", "humanTarget":false, "aiTarget":false},
+    {"id":"C", "row":0, "col":3, "length":3, "orientation":"vertical", "humanTarget":false, "aiTarget":false},
+    {"id":"D", "row":0, "col":4, "length":2, "orientation":"vertical", "humanTarget":false, "aiTarget":false},
+    {"id":"E", "row":3, "col":0, "length":2, "orientation":"vertical", "humanTarget":false, "aiTarget":false},
+    {"id":"F", "row":3, "col":3, "length":2, "orientation":"horizontal", "humanTarget":false, "aiTarget":false},
+    {"id":"G", "row":5, "col":4, "length":2, "orientation":"horizontal", "humanTarget":false, "aiTarget":false}
+  ]
+}
