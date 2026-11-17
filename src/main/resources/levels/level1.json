@@ -1,0 +1,30 @@
+{
+  "rows": 6,
+  "columns": 6,
+  "vehicles": [
+    {
+      "id": "A",
+      "length": 2,
+      "orientation": "HORIZONTAL",
+      "row": 2,
+      "column": 0,
+      "target": true
+    },
+    {
+      "id": "B",
+      "length": 3,
+      "orientation": "VERTICAL",
+      "row": 0,
+      "column": 4,
+      "target": false
+    },
+    {
+      "id": "C",
+      "length": 2,
+      "orientation": "HORIZONTAL",
+      "row": 4,
+      "column": 2,
+      "target": true
+    }
+  ]
+}

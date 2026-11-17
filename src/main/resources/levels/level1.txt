@@ -1,0 +1,5 @@
+
+6 6
+A 2 HORIZONTAL 2 0 true
+B 3 VERTICAL 0 4 false
+C 2 HORIZONTAL 4 2 true
