@@ -1,15 +1,15 @@
-
 package hu.nye.progtech.rushhour.model;
 
-public class Vehicle {
+import java.util.Objects;
+
+public final class Vehicle {
 
     private final String id;
     private final int length;
     private final Orientation orientation;
     private final boolean target;
-
-    private int row;
-    private int column;
+    private final int row;
+    private final int column;
 
     public Vehicle(String id, int length,
                    Orientation orientation,
@@ -65,25 +65,46 @@ public class Vehicle {
         return target;
     }
 
-    public void setPosition(int row, int column) {
-        if (row < 0 || column < 0) {
-            throw new IllegalArgumentException(
-                    "A pozicio nem lehet negativ.");
+    public Vehicle withPosition(int row, int column) {
+        return new Vehicle(
+                id, length, orientation,
+                row, column, target);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
 
-        this.row = row;
-        this.column = column;
+        if (!(obj instanceof Vehicle other)) {
+            return false;
+        }
+
+        return length == other.length
+                && row == other.row
+                && column == other.column
+                && target == other.target
+                && id.equals(other.id)
+                && orientation == other.orientation;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                id, length, orientation,
+                row, column, target);
     }
 
     @Override
     public String toString() {
-        return "Vehicle{" +
-                "id='" + id + '\'' +
-                ", length=" + length +
-                ", orientation=" + orientation +
-                ", row=" + row +
-                ", column=" + column +
-                ", target=" + target +
-                '}';
+        return "Vehicle{"
+                + "id='" + id + '\''
+                + ", length=" + length
+                + ", orientation=" + orientation
+                + ", row=" + row
+                + ", column=" + column
+                + ", target=" + target
+                + '}';
     }
 }

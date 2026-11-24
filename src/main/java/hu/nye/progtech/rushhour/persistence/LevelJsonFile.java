@@ -1,4 +1,3 @@
-
 package hu.nye.progtech.rushhour.persistence;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -7,20 +6,34 @@ import hu.nye.progtech.rushhour.model.Board;
 import hu.nye.progtech.rushhour.model.Orientation;
 import hu.nye.progtech.rushhour.model.Vehicle;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 public class LevelJsonFile {
 
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(LevelJsonFile.class);
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Board loadLevel(String fileName) {
         try {
-            return readLevel(fileName);
+            Board board = readLevel(fileName);
+
+            LOGGER.info("JSON palya sikeresen betoltve: {}",
+                    fileName);
+
+            return board;
+
         } catch (IOException | IllegalArgumentException e) {
-            System.out.println("JSON palya betoltese sikertelen: "
-                    + e.getMessage());
-            System.out.println("Alapertelmezett palya betoltese...");
+
+            LOGGER.warn("JSON palya betoltese sikertelen: {}",
+                    e.getMessage());
+
+            LOGGER.info("Alapertelmezett palya betoltese.");
 
             return new LevelFile().createDefaultBoard();
         }
@@ -75,7 +88,9 @@ public class LevelJsonFile {
 
                 int row = getRequiredInt(node, "row");
                 int column = getRequiredInt(node, "column");
-                boolean target = getRequiredBoolean(node, "target");
+
+                boolean target =
+                        getRequiredBoolean(node, "target");
 
                 Vehicle vehicle = new Vehicle(
                         id,
@@ -89,6 +104,10 @@ public class LevelJsonFile {
                 board.addVehicle(vehicle);
             }
 
+            LOGGER.debug(
+                    "JSON palyameret: {} x {}, jarmuvek szama: {}",
+                    rows, columns, board.getVehicles().size());
+
             return board;
         }
     }
@@ -98,6 +117,7 @@ public class LevelJsonFile {
 
         if (value == null || !value.isIntegralNumber()
                 || !value.canConvertToInt()) {
+
             throw new IllegalArgumentException(
                     "Hibas vagy hianyzo egesz szam: " + fieldName);
         }
@@ -110,6 +130,7 @@ public class LevelJsonFile {
 
         if (value == null || !value.isTextual()
                 || value.asText().isBlank()) {
+
             throw new IllegalArgumentException(
                     "Hibas vagy hianyzo szoveg: " + fieldName);
         }
@@ -117,7 +138,9 @@ public class LevelJsonFile {
         return value.asText();
     }
 
-    private boolean getRequiredBoolean(JsonNode node, String fieldName) {
+    private boolean getRequiredBoolean(JsonNode node,
+                                       String fieldName) {
+
         JsonNode value = node.get(fieldName);
 
         if (value == null || !value.isBoolean()) {

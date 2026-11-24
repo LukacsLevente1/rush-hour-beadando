@@ -1,10 +1,11 @@
-
 package hu.nye.progtech.rushhour.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
-public class Board {
+public final class Board {
 
     private final int rows;
     private final int columns;
@@ -50,7 +51,8 @@ public class Board {
         }
 
         for (Vehicle existing : vehicles) {
-            if (existing.getId().equals(vehicle.getId())) {
+            if (existing.getId().equalsIgnoreCase(
+                    vehicle.getId())) {
                 throw new IllegalArgumentException(
                         "Duplikalt jarmu azonosito.");
             }
@@ -76,11 +78,13 @@ public class Board {
                 r += i;
             }
 
-            if (r < 0 || r >= rows || c < 0 || c >= columns
+            if (r < 0 || r >= rows
+                    || c < 0 || c >= columns
                     || getVehicleAt(r, c) != null) {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -102,6 +106,17 @@ public class Board {
                 }
             }
         }
+
+        return null;
+    }
+
+    public Vehicle getVehicleById(String id) {
+        for (Vehicle vehicle : vehicles) {
+            if (vehicle.getId().equalsIgnoreCase(id)) {
+                return vehicle;
+            }
+        }
+
         return null;
     }
 
@@ -110,13 +125,7 @@ public class Board {
             return false;
         }
 
-        Vehicle selected = null;
-        for (Vehicle vehicle : vehicles) {
-            if (vehicle.getId().equals(id)) {
-                selected = vehicle;
-                break;
-            }
-        }
+        Vehicle selected = getVehicleById(id);
 
         if (selected == null) {
             return false;
@@ -130,7 +139,9 @@ public class Board {
                 == Orientation.HORIZONTAL
                 ? Integer.signum(steps) : 0;
 
-        for (long i = 1; i <= Math.abs((long) steps); i++) {
+        long distance = Math.abs((long) steps);
+
+        for (long i = 1; i <= distance; i++) {
             long r = selected.getRow() + rowDirection * i;
             long c = selected.getColumn() + colDirection * i;
 
@@ -143,23 +154,39 @@ public class Board {
                 }
             }
 
-            if (r < 0 || r >= rows || c < 0 || c >= columns) {
+            if (r < 0 || r >= rows
+                    || c < 0 || c >= columns) {
                 return false;
             }
 
             Vehicle blocking = getVehicleAt((int) r, (int) c);
+
             if (blocking != null && blocking != selected) {
                 return false;
             }
         }
 
-        int newRow = selected.getRow()
-                + rowDirection * steps;
-        int newCol = selected.getColumn()
-                + colDirection * steps;
+        int newRow = (int) (selected.getRow()
+                + rowDirection * distance);
 
-        selected.setPosition(newRow, newCol);
+        int newCol = (int) (selected.getColumn()
+                + colDirection * distance);
+
+        Vehicle movedVehicle = selected.withPosition(
+                newRow, newCol);
+
+        int index = vehicles.indexOf(selected);
+        vehicles.set(index, movedVehicle);
+
         return true;
+    }
+
+    public Board copy() {
+        Board copiedBoard = new Board(rows, columns);
+        copiedBoard.vehicles.addAll(vehicles);
+        copiedBoard.winnerId = winnerId;
+
+        return copiedBoard;
     }
 
     public boolean exitVehicle(String id, boolean rightExit) {
@@ -167,13 +194,7 @@ public class Board {
             return false;
         }
 
-        Vehicle selected = null;
-        for (Vehicle vehicle : vehicles) {
-            if (vehicle.getId().equals(id)) {
-                selected = vehicle;
-                break;
-            }
-        }
+        Vehicle selected = getVehicleById(id);
 
         if (selected == null || !selected.isTarget()
                 || selected.getOrientation()
@@ -182,43 +203,58 @@ public class Board {
         }
 
         if (rightExit) {
-            if (!id.equals("A")
+            if (!selected.getId().equalsIgnoreCase("A")
                     || selected.getColumn()
                     + selected.getLength() != columns) {
                 return false;
             }
         } else {
-            if (!id.equals("C")
+            if (!selected.getId().equalsIgnoreCase("C")
                     || selected.getColumn() != 0) {
                 return false;
             }
         }
 
-        winnerId = id;
+        winnerId = selected.getId();
         vehicles.remove(selected);
+
         return true;
     }
 
-    public void printBoard() {
-        System.out.println();
-
-        System.out.print("   ");
-        for (int c = 0; c < columns; c++) {
-            System.out.print((char) ('a' + c) + " ");
-        }
-        System.out.println();
-
-        for (int r = 0; r < rows; r++) {
-            System.out.printf("%2d ", r + 1);
-
-            for (int c = 0; c < columns; c++) {
-                Vehicle vehicle = getVehicleAt(r, c);
-                System.out.print(
-                        vehicle == null ? ". " : vehicle.getId() + " ");
-            }
-            System.out.println();
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
 
-        System.out.println();
+        if (!(obj instanceof Board other)) {
+            return false;
+        }
+
+        return rows == other.rows
+                && columns == other.columns
+                && Objects.equals(winnerId, other.winnerId)
+                && new HashSet<>(vehicles).equals(
+                new HashSet<>(other.vehicles));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                rows,
+                columns,
+                new HashSet<>(vehicles),
+                winnerId
+        );
+    }
+
+    @Override
+    public String toString() {
+        return "Board{"
+                + "rows=" + rows
+                + ", columns=" + columns
+                + ", vehicles=" + vehicles
+                + ", winnerId='" + winnerId + '\''
+                + '}';
     }
 }

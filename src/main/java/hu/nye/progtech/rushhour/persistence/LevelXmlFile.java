@@ -12,6 +12,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -19,15 +21,25 @@ import org.xml.sax.SAXException;
 
 public class LevelXmlFile {
 
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(LevelXmlFile.class);
+
     public Board loadLevel(String fileName) {
         try {
-            return readLevel(fileName);
-        } catch (Exception e) {
-            System.out.println(
-                    "XML palya betoltese sikertelen: "
-                            + e.getMessage());
-            System.out.println(
-                    "Alapertelmezett palya betoltese...");
+            Board board = readLevel(fileName);
+
+            LOGGER.info("XML palya sikeresen betoltve: {}",
+                    fileName);
+
+            return board;
+
+        } catch (IOException | ParserConfigurationException
+                 | SAXException | IllegalArgumentException e) {
+
+            LOGGER.warn("XML palya betoltese sikertelen: {}",
+                    e.getMessage());
+
+            LOGGER.info("Alapertelmezett palya betoltese.");
 
             return new LevelFile().createDefaultBoard();
         }
@@ -70,6 +82,12 @@ public class LevelXmlFile {
 
             factory.setFeature(
                     XMLConstants.FEATURE_SECURE_PROCESSING, true);
+
+            factory.setAttribute(
+                    XMLConstants.ACCESS_EXTERNAL_DTD, "");
+
+            factory.setAttribute(
+                    XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 
             factory.setXIncludeAware(false);
             factory.setExpandEntityReferences(false);
@@ -119,6 +137,7 @@ public class LevelXmlFile {
 
                 if (!targetValue.equals("true")
                         && !targetValue.equals("false")) {
+
                     throw new IllegalArgumentException(
                             "Hibas target ertek.");
                 }
@@ -130,6 +149,10 @@ public class LevelXmlFile {
                         id, length, orientation,
                         row, column, target));
             }
+
+            LOGGER.debug(
+                    "XML palyameret: {} x {}, jarmuvek szama: {}",
+                    rows, columns, board.getVehicles().size());
 
             return board;
         }
