@@ -16,6 +16,7 @@
     </properties>
 
     <dependencies>
+
         <!-- Unit tesztek -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -52,10 +53,37 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.18.3</version>
         </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
+
+            <!-- Automatikus kodminoseg-ellenorzes -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>true</failOnViolation>
+                    <failsOnError>true</failsOnError>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <id>checkstyle-validation</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Java forditas -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -68,6 +96,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.2</version>
+
                 <configuration>
                     <archive>
                         <manifest>
@@ -82,16 +111,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
+
                 <configuration>
                     <archive>
                         <manifest>
                             <mainClass>hu.nye.progtech.rushhour.Main</mainClass>
                         </manifest>
                     </archive>
+
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                 </configuration>
+
                 <executions>
                     <execution>
                         <id>make-assembly</id>
@@ -110,17 +142,20 @@
                 <version>3.5.2</version>
             </plugin>
 
-            <!-- Kodlefedettseg -->
+            <!-- JaCoCo kodlefedettseg -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.13</version>
+
                 <executions>
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
+
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
@@ -129,19 +164,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-
-            <!-- Kodminoseg ellenorzes -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.6.0</version>
-                <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
-                    <encoding>UTF-8</encoding>
-                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
-                </configuration>
             </plugin>
 
         </plugins>

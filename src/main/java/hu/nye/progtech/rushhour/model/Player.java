@@ -1,7 +1,8 @@
-
 package hu.nye.progtech.rushhour.model;
 
-public class Player {
+import java.util.Objects;
+
+public final class Player {
 
     private final String name;
     private final boolean computer;
@@ -22,6 +23,25 @@ public class Player {
 
     public boolean isComputer() {
         return computer;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (!(obj instanceof Player other)) {
+            return false;
+        }
+
+        return computer == other.computer
+                && name.equals(other.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, computer);
     }
 
     @Override

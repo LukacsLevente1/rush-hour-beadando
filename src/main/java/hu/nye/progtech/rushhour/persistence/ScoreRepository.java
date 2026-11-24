@@ -1,5 +1,7 @@
-
 package hu.nye.progtech.rushhour.persistence;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,8 +9,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ScoreRepository {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(ScoreRepository.class);
 
     private final String dbUrl;
 
@@ -43,7 +50,11 @@ public class ScoreRepository {
 
             statement.execute(sql);
 
+            LOGGER.info("Ranglista adatbazis inicializalva.");
+
         } catch (SQLException e) {
+            LOGGER.error("Adatbazis letrehozasi hiba.", e);
+
             throw new IllegalStateException(
                     "Nem sikerult letrehozni az adatbazist.", e);
         }
@@ -69,7 +80,11 @@ public class ScoreRepository {
             statement.setString(1, playerName);
             statement.executeUpdate();
 
+            LOGGER.info("Gyozelem elmentve: {}", playerName);
+
         } catch (SQLException e) {
+            LOGGER.error("Gyozelem mentese sikertelen.", e);
+
             throw new IllegalStateException(
                     "Nem sikerult elmenteni a gyozelmet.", e);
         }
@@ -88,49 +103,51 @@ public class ScoreRepository {
                 if (result.next()) {
                     return result.getInt("wins");
                 }
+
                 return 0;
             }
 
         } catch (SQLException e) {
+            LOGGER.error("Eredmeny lekerdezesi hiba.", e);
+
             throw new IllegalStateException(
                     "Nem sikerult lekerdezni az eredmenyt.", e);
         }
     }
 
-    public void printLeaderboard() {
+    public List<ScoreEntry> getLeaderboard() {
         String sql = """
                 SELECT name, wins
                 FROM scores
                 ORDER BY wins DESC, name ASC
                 """;
 
+        List<ScoreEntry> leaderboard = new ArrayList<>();
+
         try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql);
              ResultSet result = statement.executeQuery()) {
 
-            System.out.println();
-            System.out.println("=== RANGLISTA ===");
-
-            int position = 1;
-
             while (result.next()) {
-                System.out.printf(
-                        "%d. %s - %d gyozelem%n",
-                        position++,
+                leaderboard.add(new ScoreEntry(
                         result.getString("name"),
-                        result.getInt("wins"));
+                        result.getInt("wins")));
             }
 
-            if (position == 1) {
-                System.out.println("Meg nincs elmentett eredmeny.");
-            }
+            LOGGER.debug("Ranglista lekerdezve. Elemek: {}",
+                    leaderboard.size());
 
-            System.out.println();
+            return List.copyOf(leaderboard);
 
         } catch (SQLException e) {
+            LOGGER.error("Ranglista lekerdezesi hiba.", e);
+
             throw new IllegalStateException(
                     "Nem sikerult lekerdezni a ranglistat.", e);
         }
+    }
+
+    public record ScoreEntry(String name, int wins) {
     }
 }
