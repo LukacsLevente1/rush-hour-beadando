@@ -117,11 +117,13 @@ class BoardTest {
         Board board = new Board(6, 6);
 
         board.addVehicle(new Vehicle(
-                "A", 2, Orientation.HORIZONTAL, 2, 4, true));
+                "A", 2, Orientation.HORIZONTAL, 2, 4,
+                VehicleOwner.HUMAN, ExitEdge.RIGHT));
 
-        assertTrue(board.exitVehicle("A", true));
+        assertTrue(board.exitVehicle("A"));
         assertTrue(board.isGameOver());
         assertEquals("A", board.getWinnerId());
+        assertEquals(VehicleOwner.HUMAN, board.getWinnerOwner());
     }
 
     @Test
@@ -129,9 +131,10 @@ class BoardTest {
         Board board = new Board(6, 6);
 
         board.addVehicle(new Vehicle(
-                "A", 2, Orientation.HORIZONTAL, 2, 0, true));
+                "A", 2, Orientation.HORIZONTAL, 2, 0,
+                VehicleOwner.HUMAN, ExitEdge.RIGHT));
 
-        assertFalse(board.exitVehicle("A", true));
+        assertFalse(board.exitVehicle("A"));
         assertFalse(board.isGameOver());
     }
 
@@ -140,10 +143,12 @@ class BoardTest {
         Board board = new Board(6, 6);
 
         board.addVehicle(new Vehicle(
-                "C", 2, Orientation.HORIZONTAL, 4, 0, true));
+                "B", 2, Orientation.HORIZONTAL, 4, 0,
+                VehicleOwner.COMPUTER, ExitEdge.LEFT));
 
-        assertTrue(board.exitVehicle("C", false));
-        assertEquals("C", board.getWinnerId());
+        assertTrue(board.exitVehicle("B"));
+        assertEquals("B", board.getWinnerId());
+        assertEquals(VehicleOwner.COMPUTER, board.getWinnerOwner());
         assertTrue(board.isGameOver());
     }
 
@@ -271,14 +276,16 @@ class BoardTest {
         Board board = new Board(6, 6);
 
         board.addVehicle(new Vehicle(
-                "C", 2, Orientation.HORIZONTAL, 4, 3, true));
+                "B", 2, Orientation.HORIZONTAL, 4, 3,
+                VehicleOwner.COMPUTER, ExitEdge.LEFT));
 
-        assertTrue(board.moveVehicle("C", -3));
-        assertEquals("C", board.getVehicleAt(4, 0).getId());
+        assertTrue(board.moveVehicle("B", -3));
+        assertEquals("B", board.getVehicleAt(4, 0).getId());
 
-        assertTrue(board.exitVehicle("C", false));
+        assertTrue(board.exitVehicle("B"));
         assertTrue(board.isGameOver());
-        assertEquals("C", board.getWinnerId());
+        assertEquals("B", board.getWinnerId());
+        assertEquals(VehicleOwner.COMPUTER, board.getWinnerOwner());
         assertTrue(board.getVehicles().isEmpty());
     }
     @Test
@@ -414,9 +421,10 @@ class BoardTest {
         Board second = new Board(6, 6);
 
         first.addVehicle(new Vehicle(
-                "A", 2, Orientation.HORIZONTAL, 2, 4, true));
+                "A", 2, Orientation.HORIZONTAL, 2, 4,
+                VehicleOwner.HUMAN, ExitEdge.RIGHT));
 
-        assertTrue(first.exitVehicle("A", true));
+        assertTrue(first.exitVehicle("A"));
 
         assertNotEquals(first, second);
     }
@@ -426,15 +434,17 @@ class BoardTest {
         Board original = new Board(6, 6);
 
         original.addVehicle(new Vehicle(
-                "A", 2, Orientation.HORIZONTAL, 2, 4, true));
+                "A", 2, Orientation.HORIZONTAL, 2, 4,
+                VehicleOwner.HUMAN, ExitEdge.RIGHT));
 
-        assertTrue(original.exitVehicle("A", true));
+        assertTrue(original.exitVehicle("A"));
 
         Board copy = original.copy();
 
         assertEquals(original, copy);
         assertTrue(copy.isGameOver());
         assertEquals("A", copy.getWinnerId());
+        assertEquals(VehicleOwner.HUMAN, copy.getWinnerOwner());
     }
 
     @Test
@@ -460,5 +470,43 @@ class BoardTest {
                 () -> board.getVehicles().clear());
 
         assertEquals(1, board.getVehicles().size());
+    }
+
+    @Test
+    void shouldRejectComputerExitAtWrongEdge() {
+        Board board = new Board(6, 6);
+        board.addVehicle(new Vehicle(
+                "B", 2, Orientation.HORIZONTAL, 4, 4,
+                VehicleOwner.COMPUTER, ExitEdge.LEFT));
+
+        assertFalse(board.canExitVehicle("B"));
+        assertFalse(board.exitVehicle("B"));
+        assertFalse(board.isGameOver());
+        assertNotNull(board.getVehicleById("B"));
+    }
+
+    @Test
+    void shouldUseExitEdgeRegardlessOfVehicleId() {
+        Board board = new Board(6, 6);
+        board.addVehicle(new Vehicle(
+                "X", 2, Orientation.HORIZONTAL, 2, 0,
+                VehicleOwner.HUMAN, ExitEdge.LEFT));
+
+        assertTrue(board.canExitVehicle("X"));
+        assertTrue(board.exitVehicle("X"));
+        assertEquals("X", board.getWinnerId());
+        assertEquals(VehicleOwner.HUMAN, board.getWinnerOwner());
+    }
+
+    @Test
+    void shouldRejectNeutralVehicleExit() {
+        Board board = new Board(6, 6);
+        board.addVehicle(new Vehicle(
+                "C", 2, Orientation.HORIZONTAL, 2, 0,
+                VehicleOwner.NEUTRAL, ExitEdge.NONE));
+
+        assertFalse(board.canExitVehicle("C"));
+        assertFalse(board.exitVehicle("C"));
+        assertFalse(board.isGameOver());
     }
 }

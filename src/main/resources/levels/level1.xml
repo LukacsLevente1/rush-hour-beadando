@@ -5,19 +5,22 @@
              orientation="HORIZONTAL"
              row="2"
              column="0"
-             target="true"/>
+             owner="HUMAN"
+             exitEdge="RIGHT"/>
 
-    <vehicle id="B"
+    <vehicle id="C"
              length="3"
              orientation="VERTICAL"
              row="0"
              column="4"
-             target="false"/>
+             owner="NEUTRAL"
+             exitEdge="NONE"/>
 
-    <vehicle id="C"
+    <vehicle id="B"
              length="2"
              orientation="HORIZONTAL"
              row="4"
              column="2"
-             target="true"/>
+             owner="COMPUTER"
+             exitEdge="LEFT"/>
 </level>

@@ -1,3 +1,4 @@
+
 package hu.nye.progtech.rushhour.model;
 
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ public final class Board {
     private final List<Vehicle> vehicles;
 
     private String winnerId;
+    private VehicleOwner winnerOwner;
 
     public Board(int rows, int columns) {
         if (rows <= 0 || columns <= 0) {
@@ -40,6 +42,10 @@ public final class Board {
         return winnerId;
     }
 
+    public VehicleOwner getWinnerOwner() {
+        return winnerOwner;
+    }
+
     public boolean isGameOver() {
         return winnerId != null;
     }
@@ -53,8 +59,17 @@ public final class Board {
         for (Vehicle existing : vehicles) {
             if (existing.getId().equalsIgnoreCase(
                     vehicle.getId())) {
+
                 throw new IllegalArgumentException(
                         "Duplikalt jarmu azonosito.");
+            }
+
+            if (vehicle.getOwner() != VehicleOwner.NEUTRAL
+                    && existing.getOwner()
+                    == vehicle.getOwner()) {
+
+                throw new IllegalArgumentException(
+                        "A jatekosnak mar van sajat autoja.");
             }
         }
 
@@ -113,6 +128,20 @@ public final class Board {
     public Vehicle getVehicleById(String id) {
         for (Vehicle vehicle : vehicles) {
             if (vehicle.getId().equalsIgnoreCase(id)) {
+                return vehicle;
+            }
+        }
+
+        return null;
+    }
+
+    public Vehicle getVehicleByOwner(VehicleOwner owner) {
+        if (owner == null || owner == VehicleOwner.NEUTRAL) {
+            return null;
+        }
+
+        for (Vehicle vehicle : vehicles) {
+            if (vehicle.getOwner() == owner) {
                 return vehicle;
             }
         }
@@ -183,13 +212,15 @@ public final class Board {
 
     public Board copy() {
         Board copiedBoard = new Board(rows, columns);
+
         copiedBoard.vehicles.addAll(vehicles);
         copiedBoard.winnerId = winnerId;
+        copiedBoard.winnerOwner = winnerOwner;
 
         return copiedBoard;
     }
 
-    public boolean exitVehicle(String id, boolean rightExit) {
+    public boolean canExitVehicle(String id) {
         if (isGameOver()) {
             return false;
         }
@@ -197,28 +228,55 @@ public final class Board {
         Vehicle selected = getVehicleById(id);
 
         if (selected == null || !selected.isTarget()
-                || selected.getOrientation()
-                != Orientation.HORIZONTAL) {
+                || selected.getOwner() == VehicleOwner.NEUTRAL) {
             return false;
         }
 
-        if (rightExit) {
-            if (!selected.getId().equalsIgnoreCase("A")
-                    || selected.getColumn()
-                    + selected.getLength() != columns) {
-                return false;
-            }
-        } else {
-            if (!selected.getId().equalsIgnoreCase("C")
-                    || selected.getColumn() != 0) {
-                return false;
-            }
+        return switch (selected.getExitEdge()) {
+            case LEFT -> selected.getColumn() == 0;
+
+            case RIGHT -> selected.getColumn()
+                    + selected.getLength() == columns;
+
+            case TOP -> selected.getRow() == 0;
+
+            case BOTTOM -> selected.getRow()
+                    + selected.getLength() == rows;
+
+            case NONE -> false;
+        };
+    }
+
+    public boolean exitVehicle(String id) {
+        if (!canExitVehicle(id)) {
+            return false;
         }
 
+        Vehicle selected = getVehicleById(id);
+
         winnerId = selected.getId();
+        winnerOwner = selected.getOwner();
+
         vehicles.remove(selected);
 
         return true;
+    }
+
+    public boolean exitVehicle(String id, boolean rightExit) {
+        Vehicle selected = getVehicleById(id);
+
+        if (selected == null) {
+            return false;
+        }
+
+        ExitEdge requestedEdge = rightExit
+                ? ExitEdge.RIGHT : ExitEdge.LEFT;
+
+        if (selected.getExitEdge() != requestedEdge) {
+            return false;
+        }
+
+        return exitVehicle(id);
     }
 
     @Override
@@ -234,6 +292,7 @@ public final class Board {
         return rows == other.rows
                 && columns == other.columns
                 && Objects.equals(winnerId, other.winnerId)
+                && winnerOwner == other.winnerOwner
                 && new HashSet<>(vehicles).equals(
                 new HashSet<>(other.vehicles));
     }
@@ -244,7 +303,8 @@ public final class Board {
                 rows,
                 columns,
                 new HashSet<>(vehicles),
-                winnerId
+                winnerId,
+                winnerOwner
         );
     }
 
@@ -255,6 +315,7 @@ public final class Board {
                 + ", columns=" + columns
                 + ", vehicles=" + vehicles
                 + ", winnerId='" + winnerId + '\''
+                + ", winnerOwner=" + winnerOwner
                 + '}';
     }
 }
