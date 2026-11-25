@@ -3,8 +3,10 @@ package hu.nye.progtech.rushhour.persistence;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.nye.progtech.rushhour.model.Board;
+import hu.nye.progtech.rushhour.model.ExitEdge;
 import hu.nye.progtech.rushhour.model.Orientation;
 import hu.nye.progtech.rushhour.model.Vehicle;
+import hu.nye.progtech.rushhour.model.VehicleOwner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,17 +91,40 @@ public class LevelJsonFile {
                 int row = getRequiredInt(node, "row");
                 int column = getRequiredInt(node, "column");
 
-                boolean target =
-                        getRequiredBoolean(node, "target");
+                Vehicle vehicle;
 
-                Vehicle vehicle = new Vehicle(
-                        id,
-                        length,
-                        orientation,
-                        row,
-                        column,
-                        target
-                );
+                if (node.has("owner") || node.has("exitEdge")) {
+
+                    VehicleOwner owner = VehicleOwner.valueOf(
+                            getRequiredText(node, "owner"));
+
+                    ExitEdge exitEdge = ExitEdge.valueOf(
+                            getRequiredText(node, "exitEdge"));
+
+                    vehicle = new Vehicle(
+                            id,
+                            length,
+                            orientation,
+                            row,
+                            column,
+                            owner,
+                            exitEdge
+                    );
+
+                } else {
+
+                    boolean target =
+                            getRequiredBoolean(node, "target");
+
+                    vehicle = new Vehicle(
+                            id,
+                            length,
+                            orientation,
+                            row,
+                            column,
+                            target
+                    );
+                }
 
                 board.addVehicle(vehicle);
             }

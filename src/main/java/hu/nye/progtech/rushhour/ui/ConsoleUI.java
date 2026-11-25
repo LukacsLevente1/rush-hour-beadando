@@ -154,13 +154,15 @@ public class ConsoleUI {
                 continue;
             }
 
-            if (input.equalsIgnoreCase("exit A")) {
+            if (input.equalsIgnoreCase("exit")
+                    || input.equalsIgnoreCase("exit A")) {
+
                 if (game.humanExit()) {
                     break;
                 }
 
                 output.println(
-                        "Az A auto meg nincs a kijaratnal.");
+                        "A sajat auto meg nincs a kijaratnal.");
 
                 continue;
             }
@@ -179,12 +181,13 @@ public class ConsoleUI {
             } else {
                 GameService.Move move = game.getLastComputerMove();
 
-                if (move != null) {
+                if (move != null && move.exit()) {
+                    output.println("A gep kijutott a palyarol: "
+                            + move.vehicleId());
+                } else if (move != null) {
                     output.println("A gep lepese: "
                             + move.vehicleId()
                             + " " + move.steps());
-                } else if (board.isGameOver()) {
-                    output.println("A gep kijutott a palyarol.");
                 }
             }
         }
@@ -362,11 +365,11 @@ public class ConsoleUI {
         output.println();
     }
     private void printHelp() {
-        output.println("Lepes: A 2 vagy B -1");
+        output.println("Lepes: A 2 vagy C -1");
         output.println("Koordinatas lepes: a3 right 2");
         output.println("Iranyok: left, right, up, down");
         output.println("Magyarul: bal, jobb, fel, le");
-        output.println("Kijutas: exit A");
+        output.println("Kijutas: exit");
         output.println("Mentes: save mentes.txt");
         output.println("Betoltes: load mentes.txt");
         output.println("Ranglista: scores");

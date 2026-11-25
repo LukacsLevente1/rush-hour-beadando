@@ -1,8 +1,11 @@
+
 package hu.nye.progtech.rushhour.persistence;
 
 import hu.nye.progtech.rushhour.model.Board;
+import hu.nye.progtech.rushhour.model.ExitEdge;
 import hu.nye.progtech.rushhour.model.Orientation;
 import hu.nye.progtech.rushhour.model.Vehicle;
+import hu.nye.progtech.rushhour.model.VehicleOwner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,37 +124,57 @@ public class LevelFile {
                 continue;
             }
 
-            String[] parts = line.trim().split("\\s+");
-
-            if (parts.length != 6) {
-                throw new IllegalArgumentException(
-                        "Hibas jarmu sor: " + line);
-            }
-
-            String id = parts[0];
-            int length = Integer.parseInt(parts[1]);
-
-            Orientation orientation =
-                    Orientation.valueOf(parts[2]);
-
-            int row = Integer.parseInt(parts[3]);
-            int column = Integer.parseInt(parts[4]);
-
-            if (!parts[5].equals("true")
-                    && !parts[5].equals("false")) {
-
-                throw new IllegalArgumentException(
-                        "Hibas celjarmu ertek.");
-            }
-
-            boolean target = Boolean.parseBoolean(parts[5]);
-
-            board.addVehicle(new Vehicle(
-                    id, length, orientation,
-                    row, column, target));
+            board.addVehicle(parseVehicle(line));
         }
 
         return board;
+    }
+
+    private Vehicle parseVehicle(String line) {
+
+        String[] parts = line.trim().split("\\s+");
+
+        if (parts.length != 6 && parts.length != 7) {
+            throw new IllegalArgumentException(
+                    "Hibas jarmu sor: " + line);
+        }
+
+        String id = parts[0];
+        int length = Integer.parseInt(parts[1]);
+
+        Orientation orientation =
+                Orientation.valueOf(parts[2]);
+
+        int row = Integer.parseInt(parts[3]);
+        int column = Integer.parseInt(parts[4]);
+
+        if (parts.length == 7) {
+
+            VehicleOwner owner =
+                    VehicleOwner.valueOf(parts[5]);
+
+            ExitEdge exitEdge =
+                    ExitEdge.valueOf(parts[6]);
+
+            return new Vehicle(
+                    id, length, orientation,
+                    row, column, owner, exitEdge);
+        }
+
+        if (!parts[5].equals("true")
+                && !parts[5].equals("false")) {
+
+            throw new IllegalArgumentException(
+                    "Hibas celjarmu ertek.");
+        }
+
+        boolean target = Boolean.parseBoolean(parts[5]);
+
+        LOGGER.debug("Regi jarmuformatum: {}", id);
+
+        return new Vehicle(
+                id, length, orientation,
+                row, column, target);
     }
 
     public void saveLevel(Board board, String fileName)
@@ -170,7 +193,7 @@ public class LevelFile {
 
         if (board == null || path == null) {
             throw new IllegalArgumentException(
-                    "Hibas mentési adatok.");
+                    "Hibas mentesi adatok.");
         }
 
         if (board.isGameOver()) {
@@ -193,13 +216,8 @@ public class LevelFile {
             writer.newLine();
 
             for (Vehicle vehicle : board.getVehicles()) {
-                writer.write(
-                        vehicle.getId() + " "
-                                + vehicle.getLength() + " "
-                                + vehicle.getOrientation() + " "
-                                + vehicle.getRow() + " "
-                                + vehicle.getColumn() + " "
-                                + vehicle.isTarget());
+
+                writer.write(formatVehicle(vehicle));
 
                 writer.newLine();
             }
@@ -208,20 +226,39 @@ public class LevelFile {
         LOGGER.info("Jatektabla sikeresen mentve: {}", path);
     }
 
+    private String formatVehicle(Vehicle vehicle) {
+
+        String base = vehicle.getId() + " "
+                + vehicle.getLength() + " "
+                + vehicle.getOrientation() + " "
+                + vehicle.getRow() + " "
+                + vehicle.getColumn() + " ";
+
+        if (vehicle.isTarget()
+                && vehicle.getOwner() == VehicleOwner.NEUTRAL) {
+
+            return base + vehicle.isTarget();
+        }
+
+        return base
+                + vehicle.getOwner() + " "
+                + vehicle.getExitEdge();
+    }
+
     public Board createDefaultBoard() {
         Board board = new Board(6, 6);
 
         board.addVehicle(new Vehicle(
                 "A", 2, Orientation.HORIZONTAL,
-                2, 0, true));
+                2, 0, VehicleOwner.HUMAN, ExitEdge.RIGHT));
 
         board.addVehicle(new Vehicle(
-                "B", 3, Orientation.VERTICAL,
-                0, 4, false));
+                "C", 3, Orientation.VERTICAL,
+                0, 4, VehicleOwner.NEUTRAL, ExitEdge.NONE));
 
         board.addVehicle(new Vehicle(
-                "C", 2, Orientation.HORIZONTAL,
-                4, 2, true));
+                "B", 2, Orientation.HORIZONTAL,
+                4, 2, VehicleOwner.COMPUTER, ExitEdge.LEFT));
 
         return board;
     }

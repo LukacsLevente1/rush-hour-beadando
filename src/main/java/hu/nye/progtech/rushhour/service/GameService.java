@@ -1,8 +1,10 @@
+
 package hu.nye.progtech.rushhour.service;
 
 import hu.nye.progtech.rushhour.model.Board;
 import hu.nye.progtech.rushhour.model.Player;
 import hu.nye.progtech.rushhour.model.Vehicle;
+import hu.nye.progtech.rushhour.model.VehicleOwner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,7 @@ public class GameService {
     private final Board board;
     private final Player human;
     private final Player computer;
-    private final Random random = new Random();
+    private final Random random;
 
     private boolean humanTurn = true;
 
@@ -28,12 +30,21 @@ public class GameService {
     public GameService(Board board, Player human,
                        Player computer) {
 
-        if (board == null || human == null || computer == null) {
+        this(board, human, computer, new Random());
+    }
+
+    public GameService(Board board, Player human,
+                       Player computer, Random random) {
+
+        if (board == null || human == null
+                || computer == null || random == null) {
+
             throw new IllegalArgumentException(
                     "Hibas jatek adatok.");
         }
 
         if (human.isComputer() || !computer.isComputer()) {
+
             throw new IllegalArgumentException(
                     "Hibas jatekos tipusok.");
         }
@@ -41,6 +52,7 @@ public class GameService {
         this.board = board;
         this.human = human;
         this.computer = computer;
+        this.random = random;
 
         LOGGER.info("Jatekszolgaltatas inicializalva. Jatekos: {}",
                 human.getName());
@@ -63,8 +75,15 @@ public class GameService {
             return null;
         }
 
-        return "A".equalsIgnoreCase(board.getWinnerId())
-                ? human : computer;
+        if (board.getWinnerOwner() == VehicleOwner.HUMAN) {
+            return human;
+        }
+
+        if (board.getWinnerOwner() == VehicleOwner.COMPUTER) {
+            return computer;
+        }
+
+        return null;
     }
 
     public boolean humanMove(String id, int steps) {
@@ -91,16 +110,39 @@ public class GameService {
             return false;
         }
 
-        boolean success = board.exitVehicle("A", true);
+        Vehicle vehicle =
+                board.getVehicleByOwner(VehicleOwner.HUMAN);
+
+        if (vehicle == null) {
+            return false;
+        }
+
+        boolean success = executeExit(
+                vehicle.getId(), VehicleOwner.HUMAN);
 
         if (success) {
-            LOGGER.info("A jatekos megnyerte a jatekot: {}",
-                    human.getName());
-        } else {
-            LOGGER.debug("Sikertelen kijutasi kiserlet.");
+            humanTurn = false;
         }
 
         return success;
+    }
+
+    private boolean executeExit(String id, VehicleOwner owner) {
+        Vehicle vehicle = board.getVehicleById(id);
+
+        if (vehicle == null || vehicle.getOwner() != owner) {
+            return false;
+        }
+
+        if (!board.exitVehicle(id)) {
+            LOGGER.debug("Sikertelen kijutasi kiserlet: {}", id);
+            return false;
+        }
+
+        LOGGER.info("Sikeres kijutas. Jarmu: {}, tulajdonos: {}",
+                id, owner);
+
+        return true;
     }
 
     public boolean computerMove() {
@@ -110,83 +152,108 @@ public class GameService {
 
         lastComputerMove = null;
 
-        if (board.exitVehicle("C", false)) {
-            LOGGER.info("A szamitogep megnyerte a jatekot.");
-            return true;
-        }
+        Move chosen = chooseRandomMove();
 
-        List<Move> possibleMoves = new ArrayList<>();
-        List<Move> preferredMoves = new ArrayList<>();
-
-        int maxSteps = Math.max(
-                board.getRows(), board.getColumns());
-
-        for (Vehicle vehicle : board.getVehicles()) {
-            for (int steps = -maxSteps;
-                 steps <= maxSteps; steps++) {
-
-                if (steps == 0) {
-                    continue;
-                }
-
-                Board simulation = board.copy();
-
-                if (simulation.moveVehicle(
-                        vehicle.getId(), steps)) {
-
-                    Move move = new Move(
-                            vehicle.getId(), steps);
-
-                    possibleMoves.add(move);
-
-                    if ("C".equalsIgnoreCase(vehicle.getId())
-                            && steps < 0) {
-
-                        preferredMoves.add(move);
-                    }
-                }
-            }
-        }
-
-        LOGGER.debug("Lehetseges gepi lepesek: {}",
-                possibleMoves.size());
-
-        if (possibleMoves.isEmpty()) {
+        if (chosen == null) {
             LOGGER.warn("A szamitogep nem tudott lepni.");
 
             humanTurn = true;
             return false;
         }
 
-        Move chosen;
+        boolean success;
 
-        if (!preferredMoves.isEmpty()) {
-            chosen = preferredMoves.get(0);
-
-            for (Move move : preferredMoves) {
-                if (move.steps() < chosen.steps()) {
-                    chosen = move;
-                }
-            }
+        if (chosen.exit()) {
+            success = executeExit(
+                    chosen.vehicleId(), VehicleOwner.COMPUTER);
         } else {
-            chosen = possibleMoves.get(
-                    random.nextInt(possibleMoves.size()));
+            success = board.moveVehicle(
+                    chosen.vehicleId(), chosen.steps());
         }
-
-        boolean success = board.moveVehicle(
-                chosen.vehicleId(), chosen.steps());
 
         if (success) {
             lastComputerMove = chosen;
 
-            LOGGER.info("Szamitogep lepese: {} {}",
-                    chosen.vehicleId(), chosen.steps());
+            LOGGER.info("Szamitogep lepese: {}, lepes: {}, kijutas: {}",
+                    chosen.vehicleId(),
+                    chosen.steps(),
+                    chosen.exit());
         }
 
         humanTurn = true;
         return success;
     }
 
-    public record Move(String vehicleId, int steps) {
+    private Move chooseRandomMove() {
+
+        List<Vehicle> candidates =
+                new ArrayList<>(board.getVehicles());
+
+        while (!candidates.isEmpty()) {
+
+            int vehicleIndex =
+                    random.nextInt(candidates.size());
+
+            Vehicle vehicle =
+                    candidates.remove(vehicleIndex);
+
+            List<Move> legalMoves =
+                    getLegalMoves(vehicle);
+
+            if (!legalMoves.isEmpty()) {
+
+                int moveIndex =
+                        random.nextInt(legalMoves.size());
+
+                return legalMoves.get(moveIndex);
+            }
+
+            LOGGER.debug("Nem mozgathato jarmu: {}",
+                    vehicle.getId());
+        }
+
+        return null;
+    }
+
+    private List<Move> getLegalMoves(Vehicle vehicle) {
+
+        List<Move> legalMoves = new ArrayList<>();
+
+        int maxSteps = Math.max(
+                board.getRows(), board.getColumns());
+
+        for (int steps = -maxSteps;
+             steps <= maxSteps; steps++) {
+
+            if (steps == 0) {
+                continue;
+            }
+
+            Board simulation = board.copy();
+
+            if (simulation.moveVehicle(
+                    vehicle.getId(), steps)) {
+
+                legalMoves.add(new Move(
+                        vehicle.getId(), steps));
+            }
+        }
+
+        if (vehicle.getOwner() == VehicleOwner.COMPUTER
+                && board.canExitVehicle(vehicle.getId())) {
+
+            legalMoves.add(new Move(
+                    vehicle.getId(), 0, true));
+        }
+
+        return legalMoves;
+    }
+
+    public record Move(String vehicleId, int steps,
+                       boolean exit) {
+
+        public Move(String vehicleId, int steps) {
+            this(vehicleId, steps, false);
+        }
     }
 }

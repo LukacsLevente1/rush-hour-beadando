@@ -1,8 +1,10 @@
 package hu.nye.progtech.rushhour.persistence;
 
 import hu.nye.progtech.rushhour.model.Board;
+import hu.nye.progtech.rushhour.model.ExitEdge;
 import hu.nye.progtech.rushhour.model.Orientation;
 import hu.nye.progtech.rushhour.model.Vehicle;
+import hu.nye.progtech.rushhour.model.VehicleOwner;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -132,22 +134,53 @@ public class LevelXmlFile {
                 int column = Integer.parseInt(
                         element.getAttribute("column"));
 
-                String targetValue =
-                        element.getAttribute("target");
+                Vehicle vehicle;
 
-                if (!targetValue.equals("true")
-                        && !targetValue.equals("false")) {
+                if (element.hasAttribute("owner")
+                        || element.hasAttribute("exitEdge")) {
 
-                    throw new IllegalArgumentException(
-                            "Hibas target ertek.");
+                    VehicleOwner owner = VehicleOwner.valueOf(
+                            element.getAttribute("owner"));
+
+                    ExitEdge exitEdge = ExitEdge.valueOf(
+                            element.getAttribute("exitEdge"));
+
+                    vehicle = new Vehicle(
+                            id,
+                            length,
+                            orientation,
+                            row,
+                            column,
+                            owner,
+                            exitEdge
+                    );
+
+                } else {
+
+                    String targetValue =
+                            element.getAttribute("target");
+
+                    if (!targetValue.equals("true")
+                            && !targetValue.equals("false")) {
+
+                        throw new IllegalArgumentException(
+                                "Hibas target ertek.");
+                    }
+
+                    boolean target =
+                            Boolean.parseBoolean(targetValue);
+
+                    vehicle = new Vehicle(
+                            id,
+                            length,
+                            orientation,
+                            row,
+                            column,
+                            target
+                    );
                 }
 
-                boolean target =
-                        Boolean.parseBoolean(targetValue);
-
-                board.addVehicle(new Vehicle(
-                        id, length, orientation,
-                        row, column, target));
+                board.addVehicle(vehicle);
             }
 
             LOGGER.debug(
